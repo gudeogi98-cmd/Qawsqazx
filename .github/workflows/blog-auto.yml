@@ -1,0 +1,96 @@
+name: Blog automation
+
+on:
+  schedule:
+    # 매일 오전 9시(KST) = 00:00 UTC. 원하는 주기로 바꾸세요.
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "글 주제 (비워두면 topics.csv의 대기 주제를 씀)"
+        required: false
+        default: ""
+      keywords:
+        description: "넣을 키워드 (선택, 쉼표로 구분)"
+        required: false
+        default: ""
+      limit:
+        description: "주제를 비워둔 경우 이번에 만들 글 수"
+        required: false
+        default: "1"
+      publish:
+        description: "바로 발행할까요? (끄면 drafts/에 초안으로만 저장)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blog-auto
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API key
+        id: key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = "schedule" ]; then
+            echo "::notice::ANTHROPIC_API_KEY가 없어 예약 실행을 건너뜁니다."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::ANTHROPIC_API_KEY가 없습니다. Settings → Secrets and variables → Actions에서 추가해 주세요."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.ok == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.key.outputs.ok == 'true'
+        with:
+          python-version: "3.12"
+
+      - if: steps.key.outputs.ok == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Generate posts
+        if: steps.key.outputs.ok == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOG_WEBHOOK_URL: ${{ secrets.BLOG_WEBHOOK_URL }}
+          TOPIC: ${{ inputs.topic }}
+          KEYWORDS: ${{ inputs.keywords }}
+          LIMIT: ${{ inputs.limit || '1' }}
+          # 예약 실행일 때는 inputs가 비어 있으므로 기본값(발행)을 씁니다.
+          PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish }}
+        run: |
+          publish_flag=""
+          if [ "$PUBLISH" = "true" ]; then publish_flag="--publish"; fi
+          if [ -n "$TOPIC" ]; then
+            path=$(python -m blog_auto write "$TOPIC" --keywords "$KEYWORDS" $publish_flag)
+            echo "### 새 글: \`$path\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            python -m blog_auto run --limit "$LIMIT" $publish_flag
+          fi
+          python -m blog_auto status >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit new posts
+        if: always() && steps.key.outputs.ok == 'true'
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          git add -A drafts posts topics.csv 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "커밋할 변경 없음"
+          else
+            git commit -m "블로그 글 자동 생성 $(date -u +%Y-%m-%d)"
+            git push
+          fi

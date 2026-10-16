@@ -3,3 +3,11 @@
 
 # Ada Library Information
 *.ali
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.tmp
+blog.log
