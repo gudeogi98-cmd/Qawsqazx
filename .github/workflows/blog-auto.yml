@@ -1,0 +1,57 @@
+name: Blog automation
+
+on:
+  schedule:
+    # 매일 오전 9시(KST) = 00:00 UTC. 원하는 주기로 바꾸세요.
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "이번에 만들 글 수"
+        default: "1"
+      publish:
+        description: "생성 즉시 발행 (true/false)"
+        default: "true"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blog-auto
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Generate posts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOG_WEBHOOK_URL: ${{ secrets.BLOG_WEBHOOK_URL }}
+          LIMIT: ${{ inputs.limit || '1' }}
+          PUBLISH: ${{ inputs.publish || 'true' }}
+        run: |
+          args="--limit $LIMIT"
+          if [ "$PUBLISH" = "true" ]; then args="$args --publish"; fi
+          python -m blog_auto run $args
+
+      - name: Commit new posts
+        if: always()
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          git add -A drafts posts topics.csv 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "커밋할 변경 없음"
+          else
+            git commit -m "블로그 글 자동 생성 $(date -u +%Y-%m-%d)"
+            git push
+          fi

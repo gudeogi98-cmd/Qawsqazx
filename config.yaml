@@ -1,0 +1,16 @@
+# 블로그 자동화 설정
+model: claude-opus-5-5
+effort: medium          # low / medium / high / xhigh / max (높을수록 품질↑ 비용↑)
+language: 한국어
+tone: 친근하고 이해하기 쉬운
+target_length: 2000     # 본문 목표 글자 수(대략)
+
+topics_file: topics.csv
+drafts_dir: drafts      # 생성된 초안 위치
+posts_dir: posts        # 발행된 글 위치
+posts_per_run: 1        # run 한 번에 만들 글 수
+auto_publish: false     # true면 생성 즉시 posts/로 발행
+
+# 발행 시 글을 JSON으로 POST할 URL (Zapier, Make, n8n 등). 비워두면 사용 안 함.
+# 비밀 URL은 여기 대신 BLOG_WEBHOOK_URL 환경 변수로 넣으세요.
+webhook_url: ""
