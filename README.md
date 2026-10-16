@@ -12,14 +12,41 @@ topics.csv ──▶ Claude로 글 생성 ──▶ drafts/ (초안) ──▶ p
 - 웹훅 URL을 설정하면 발행할 때 글을 JSON으로 보냅니다. Zapier, Make, n8n 등에 연결해
   WordPress나 다른 플랫폼으로 넘길 수 있습니다.
 
-## 설치
+## 웹/휴대폰에서 쓰기 (설치 필요 없음)
+
+### 1. 처음 한 번만: API 키 준비
+
+1. https://console.anthropic.com 에 가입하고 로그인합니다.
+2. **Billing**에서 결제 수단을 등록하고 크레딧을 충전합니다. (사용한 만큼 요금이 나가요)
+3. **API Keys → Create Key**로 키를 만들고 `sk-ant-...`로 시작하는 값을 복사합니다.
+   이 값은 다시 볼 수 없으니 바로 다음 단계로 넘어가세요. 다른 사람에게 보여주면 안 돼요.
+4. GitHub 저장소에서 **Settings → Secrets and variables → Actions → New repository secret**을 누릅니다.
+5. Name에 `ANTHROPIC_API_KEY`, Secret에 복사한 키를 넣고 저장합니다.
+
+### 2. 글 쓰기
+
+1. 저장소 상단의 **Actions** 탭 → 왼쪽 **Blog automation** → 오른쪽 **Run workflow**를 누릅니다.
+2. **글 주제**에 원하는 주제를 적고(키워드는 선택) **Run workflow**를 누릅니다.
+3. 1~3분 뒤 초록색 체크가 뜨면 완료입니다. 저장소의 `posts/` 폴더에서 새 글을 볼 수 있어요.
+   (발행을 끄고 실행했다면 `drafts/` 폴더에 있어요)
+
+### 3. 주제 목록으로 자동 연재
+
+- 저장소에서 `topics.csv`를 열고 연필 아이콘으로 편집해 주제를 한 줄씩 추가합니다.
+  새 줄은 `주제,키워드,pending,,` 형식으로 쓰면 됩니다.
+- 매일 오전 9시에 대기 중인 주제로 글 1개가 자동으로 써집니다.
+- 바로 돌리고 싶으면 **Run workflow**에서 주제를 비워두고 실행하면 목록에서 가져다 씁니다.
+
+## 내 컴퓨터에서 쓰기
+
+### 설치
 
 ```bash
 pip install -r requirements.txt
 export ANTHROPIC_API_KEY=sk-ant-...   # https://console.anthropic.com 에서 발급
 ```
 
-## 사용법
+### 사용법
 
 ```bash
 # 주제 하나로 바로 글 쓰기
@@ -38,7 +65,7 @@ python -m blog_auto publish drafts/2026-10-16-my-post.md
 python -m blog_auto status
 ```
 
-### 주제 목록 (`topics.csv`)
+### 주제 목록 형식 (`topics.csv`)
 
 | 열 | 설명 |
 |---|---|
