@@ -81,7 +81,7 @@ class ClaudeGenerator:
                 "effort": self.cfg.effort,
                 "format": {"type": "json_schema", "schema": POST_SCHEMA},
             },
-            extra_body={"fallbacks": "default"},
+            fallbacks="default",
         ) as stream:
             message = stream.get_final_message()
 
