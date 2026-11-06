@@ -1,0 +1,38 @@
+# AI 에이전트 팀 설정
+# 리더(lead)는 항상 있고, 아래 agents가 리더에게 일을 받는 팀원입니다.
+# 팀원을 추가·삭제하거나 역할을 바꾸면 리더가 알아서 그 구성에 맞게 일을 나눕니다.
+
+model: claude-opus-5-5
+lead_effort: high       # 리더의 생각 깊이: low / medium / high / xhigh / max
+language: 한국어
+max_rounds: 15          # 리더가 일을 맡기는 최대 횟수 (비용 폭주 방지)
+output_dir: team_outputs
+
+agents:
+  - name: researcher
+    role: 자료 조사 담당. 사실, 수치, 사례, 출처를 찾아 정리합니다.
+    instructions: >-
+      맡은 주제에 대해 핵심 사실과 근거를 조사해 글머리표로 정리하세요.
+      출처(URL)를 함께 적고, 확인하지 못한 내용은 '미확인'이라고 표시하세요.
+    effort: medium
+    web_search: true    # 웹 검색 사용 (검색 1회당 별도 요금)
+
+  - name: writer
+    role: 작성 담당. 조사 자료와 지시를 바탕으로 완성도 높은 결과물을 씁니다.
+    instructions: >-
+      공유 노트의 조사 자료를 근거로 결과물을 작성하세요. 자료에 없는 사실은 지어내지 마세요.
+      검토 의견이 있으면 빠짐없이 반영하고, 무엇을 고쳤는지 끝에 짧게 적으세요.
+    effort: medium
+
+  - name: reviewer
+    role: 검토 담당. 결과물의 오류, 빠진 내용, 개선점을 찾아 구체적으로 지적합니다.
+    instructions: >-
+      결과물을 꼼꼼히 검토해 사실 오류, 논리 비약, 빠진 내용, 읽기 어려운 부분을 번호 목록으로 지적하고
+      각 항목에 고칠 방법을 적으세요. 고칠 것이 없으면 첫 줄에 '승인'이라고만 쓰세요.
+    effort: medium
+
+  # 예시: 팀원 추가
+  # - name: coder
+  #   role: 개발 담당. 코드를 작성하고 사용법을 설명합니다.
+  #   instructions: 실행 가능한 완전한 코드를 작성하고, 실행 방법과 주의점을 함께 적으세요.
+  #   effort: high
